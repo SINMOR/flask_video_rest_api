@@ -18,12 +18,9 @@ for i in range(len(data)):
     # BASE + "video/"+str(i) constructs the URL like "http://example.com/api/video/0", "http://example.com/api/video/1", etc.
     # data[i] is the payload containing the current video's data
     response = requests.put(BASE + "video/" + str(i), data[i])
-
     # Print the server's response in JSON format
     print(response.json())
-input()
-response = requests.delete(BASE + "video/0")
-print(response)
+
 input()  # to pause when executing
 response = requests.get(BASE + "video/2")
 print(response.json())

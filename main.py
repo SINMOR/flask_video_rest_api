@@ -1,6 +1,6 @@
 from flask import Flask, request
-from flask_restful import Api, Resource, reqparse, abort
-from flask_sqlalchemy import SQLAlchemy
+from flask_restful import Api, Resource, reqparse, abort, fields, marshal_with
+from flask_sqlalchemy import SQLAlchemy, Model
 
 app = Flask(__name__)
 api = Api(app)
@@ -23,6 +23,13 @@ class video(db.Model):
             f"Video(name= {name}, views= {views}, likes= {likes}, dislikes= {dislikes})"
         )
 
+    # with app.app_context():
+    #     try:
+    #         db.create_all()
+    #         print("Tables created successfully.")
+    #     except Exception as e:
+    #         print("An error occurred while creating tables:", e)
+
 
 video_put_args = reqparse.RequestParser()
 video_put_args.add_argument("name", type=str, help="Name of the video ", required=True)
@@ -35,34 +42,38 @@ video_put_args.add_argument(
 video_put_args.add_argument(
     "dislikes", type=int, help="Dislikes on the video ", required=True
 )
-videos = {}
-
-
-def abort_no_video_id(video_id):
-    if video_id not in videos:
-        abort(404, message="Could not find video...")
-
-
-def abort_yes_video_id(video_id):
-    if video_id in videos:
-        abort(409, message="Video already exists with that ID ...")
+# serializing objects
+resource_fields = {
+    "id": fields.String,
+    "name": fields.String,
+    "views": fields.Integer,
+    "likes": fields.Integer,
+    "dislikes": fields.Integer,
+}
 
 
 class video(Resource):
+    @marshal_with(resource_fields)
     def get(self, video_id):
-        abort_no_video_id(video_id)
-        return videos[video_id]
+        result = video.Model.query.filter_by(id=video_id).first()
+        return result
 
+    @marshal_with(resource_fields)
     def put(self, video_id):
-        abort_yes_video_id(video_id)
         args = video_put_args.parse_args()
-        videos[video_id] = args
-        return videos[video_id], 201
+        video = video.Model(
+            id=video_id,
+            name=args["name"],
+            views=args["views"],
+            likes=args["likes"],
+            dislikes=args["dislikes"],
+        )
+        return video, 201
 
-    def delete(self, video_id):
-        abort_no_video_id(video_id)
-        del videos[video_id]
-        return "", 204
+    # def delete(self, video_id):
+    #     abort_no_video_id(video_id)
+    #     del videos[video_id]
+    #     return "", 204
 
 
 api.add_resource(video, "/video/<int:video_id>")
